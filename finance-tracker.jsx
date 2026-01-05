@@ -159,6 +159,22 @@ export default function FinanceTracker() {
     reader.readAsText(file);
   };
 
+  // Detect recurring transactions (moved before metrics to avoid initialization error)
+  const detectRecurring = (trans) => {
+    const grouped = {};
+    trans.forEach(t => {
+      const key = `${t.description}-${Math.round(Math.abs(t.amount))}`;
+      grouped[key] = (grouped[key] || 0) + 1;
+    });
+    
+    return Object.entries(grouped)
+      .filter(([key, count]) => count >= 2)
+      .map(([key, count]) => {
+        const [description, amount] = key.split('-');
+        return { description, amount: parseFloat(amount), count };
+      });
+  };
+
   // Calculate financial metrics
   const metrics = useMemo(() => {
     const now = new Date();
@@ -204,22 +220,6 @@ export default function FinanceTracker() {
       recurring,
     };
   }, [transactions, accounts, debts, assets]);
-
-  // Detect recurring transactions
-  const detectRecurring = (trans) => {
-    const grouped = {};
-    trans.forEach(t => {
-      const key = `${t.description}-${Math.round(Math.abs(t.amount))}`;
-      grouped[key] = (grouped[key] || 0) + 1;
-    });
-    
-    return Object.entries(grouped)
-      .filter(([key, count]) => count >= 2)
-      .map(([key, count]) => {
-        const [description, amount] = key.split('-');
-        return { description, amount: parseFloat(amount), count };
-      });
-  };
 
   // Theme classes
   const bg = darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50';
@@ -1873,10 +1873,13 @@ function ForecastView({
         const dateKey = current.toISOString().split('T')[0];
         const jobIds = workSchedule[dateKey] || [];
         
-        jobIds.forEach(jobId => {
-          const job = jobs.find(j => j.id === jobId);
-          if (job) totalEarnings += job.dailyRate;
-        });
+        // Calculate day earnings to avoid loop function warning
+        let dayEarnings = 0;
+        for (let i = 0; i < jobIds.length; i++) {
+          const job = jobs.find(j => j.id === jobIds[i]);
+          if (job) dayEarnings += job.dailyRate;
+        }
+        totalEarnings += dayEarnings;
         
         current.setDate(current.getDate() + 1);
       }
