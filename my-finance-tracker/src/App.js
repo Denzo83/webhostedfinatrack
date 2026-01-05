@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { Upload, TrendingUp, TrendingDown, DollarSign, Target, CreditCard, PiggyBank, Calendar, Settings, Moon, Sun, Download, Plus, Trash2, Edit2, Check, X, AlertCircle, CheckCircle } from 'lucide-react';
 
 // Modern color palette - sophisticated and vibrant
@@ -438,9 +438,6 @@ export default function FinanceTracker() {
 
 // Dashboard View Component
 function DashboardView({ metrics, transactions, budgets, savingsGoals, darkMode, cardBg, textSecondary, borderColor }) {
-  const now = new Date();
-  const currentMonth = now.toLocaleString('default', { month: 'long' });
-  
   // Spending by category for pie chart
   const categoryData = Object.entries(metrics.categorySpending)
     .filter(([cat]) => cat !== 'Income')
@@ -938,6 +935,7 @@ function BudgetView({ transactions, budgets, setBudgets, metrics, darkMode, card
 // Debts View Component
 function DebtsView({ debts, setDebts, darkMode, cardBg, textSecondary, borderColor }) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [paymentAmounts, setPaymentAmounts] = useState({});
   const [newDebt, setNewDebt] = useState({
     name: '',
     amount: '',
@@ -1102,7 +1100,7 @@ function DebtsView({ debts, setDebts, darkMode, cardBg, textSecondary, borderCol
       <div className="space-y-4">
         {debts.map(debt => {
           const progress = ((debt.originalAmount - debt.amount) / debt.originalAmount) * 100;
-          const [paymentAmount, setPaymentAmount] = useState('');
+          const paymentAmount = paymentAmounts[debt.id] || '';
 
           return (
             <div key={debt.id} className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
@@ -1153,14 +1151,14 @@ function DebtsView({ debts, setDebts, darkMode, cardBg, textSecondary, borderCol
                   type="number"
                   placeholder="Payment amount"
                   value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  onChange={(e) => setPaymentAmounts(prev => ({...prev, [debt.id]: e.target.value}))}
                   className={`flex-1 px-4 py-2 rounded-lg border ${borderColor} ${darkMode ? 'bg-gray-700' : 'bg-white'} focus:ring-2 focus:ring-blue-500 outline-none`}
                 />
                 <button
                   onClick={() => {
                     if (paymentAmount) {
                       makePayment(debt.id, paymentAmount);
-                      setPaymentAmount('');
+                      setPaymentAmounts(prev => ({...prev, [debt.id]: ''}));
                     }
                   }}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -1186,6 +1184,7 @@ function DebtsView({ debts, setDebts, darkMode, cardBg, textSecondary, borderCol
 // Savings View Component
 function SavingsView({ savingsGoals, setSavingsGoals, darkMode, cardBg, textSecondary, borderColor }) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [contributionAmounts, setContributionAmounts] = useState({});
   const [newGoal, setNewGoal] = useState({
     name: '',
     target: '',
@@ -1296,7 +1295,7 @@ function SavingsView({ savingsGoals, setSavingsGoals, darkMode, cardBg, textSeco
           const progress = (goal.current / goal.target) * 100;
           const remaining = goal.target - goal.current;
           const daysUntilDeadline = goal.deadline ? Math.ceil((new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24)) : null;
-          const [contributionAmount, setContributionAmount] = useState('');
+          const contributionAmount = contributionAmounts[goal.id] || '';
 
           return (
             <div key={goal.id} className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
@@ -1350,14 +1349,14 @@ function SavingsView({ savingsGoals, setSavingsGoals, darkMode, cardBg, textSeco
                   type="number"
                   placeholder="Contribution amount"
                   value={contributionAmount}
-                  onChange={(e) => setContributionAmount(e.target.value)}
+                  onChange={(e) => setContributionAmounts(prev => ({...prev, [goal.id]: e.target.value}))}
                   className={`flex-1 px-4 py-2 rounded-lg border ${borderColor} ${darkMode ? 'bg-gray-700' : 'bg-white'} focus:ring-2 focus:ring-blue-500 outline-none`}
                 />
                 <button
                   onClick={() => {
                     if (contributionAmount) {
                       addContribution(goal.id, contributionAmount);
-                      setContributionAmount('');
+                      setContributionAmounts(prev => ({...prev, [goal.id]: ''}));
                     }
                   }}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
@@ -1619,17 +1618,6 @@ function ReportsView({ transactions, metrics, darkMode, cardBg, textSecondary, b
   const hecsRate = hecsThresholds.find(t => annualIncome <= t.income)?.rate || 0;
   const hecsRepayment = annualIncome * hecsRate;
 
-  // Calendar year vs Financial year comparison
-  const calendarYearIncome = transactions.filter(t => {
-    const date = new Date(t.date);
-    return date.getFullYear() === selectedYear && t.amount > 0;
-  }).reduce((sum, t) => sum + t.amount, 0);
-
-  const calendarYearExpenses = transactions.filter(t => {
-    const date = new Date(t.date);
-    return date.getFullYear() === selectedYear && t.amount < 0;
-  }).reduce((sum, t) => sum + Math.abs(t.amount), 0);
-
   return (
     <div className="space-y-6">
       {/* Report Controls */}
@@ -1876,24 +1864,26 @@ function ForecastView({
   };
 
   // Calculate earnings for a date range
-  const calculateEarnings = (startDate, endDate) => {
-    let totalEarnings = 0;
-    const current = new Date(startDate);
-    
-    while (current <= endDate) {
-      const dateKey = current.toISOString().split('T')[0];
-      const jobIds = workSchedule[dateKey] || [];
+  const calculateEarnings = useMemo(() => {
+    return (startDate, endDate) => {
+      let totalEarnings = 0;
+      const current = new Date(startDate);
       
-      jobIds.forEach(jobId => {
-        const job = jobs.find(j => j.id === jobId);
-        if (job) totalEarnings += job.dailyRate;
-      });
+      while (current <= endDate) {
+        const dateKey = current.toISOString().split('T')[0];
+        const jobIds = workSchedule[dateKey] || [];
+        
+        jobIds.forEach(jobId => {
+          const job = jobs.find(j => j.id === jobId);
+          if (job) totalEarnings += job.dailyRate;
+        });
+        
+        current.setDate(current.getDate() + 1);
+      }
       
-      current.setDate(current.getDate() + 1);
-    }
-    
-    return totalEarnings;
-  };
+      return totalEarnings;
+    };
+  }, [workSchedule, jobs]);
 
   // Get current fortnight earnings
   const today = new Date();
