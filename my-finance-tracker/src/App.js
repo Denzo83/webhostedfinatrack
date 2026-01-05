@@ -118,7 +118,7 @@ export default function FinanceTracker() {
     localStorage.setItem('financeTrackerData', JSON.stringify(data));
   }, [transactions, budgets, debts, savingsGoals, accounts, assets, jobs, workSchedule, recurringTransactions]);
 
-  // Parse CSV from Westpac
+  // Parse CSV from Westpac - proper CSV parsing with quoted field handling
   const handleCSVUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -126,45 +126,90 @@ export default function FinanceTracker() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target.result;
+      
+      // Proper CSV parser that handles quoted fields
+      const parseCSVLine = (line) => {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+      
       const lines = text.split('\n').filter(line => line.trim());
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const headers = parseCSVLine(lines[0]);
       
       const newTransactions = lines.slice(1).map((line, index) => {
-        const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+        const values = parseCSVLine(line);
         const obj = {};
         headers.forEach((header, i) => {
-          obj[header] = values[i];
+          obj[header] = values[i] || '';
         });
 
         // Extract date - handle DD/MM/YYYY format
-        let date = obj['Date'] || obj['Transaction Date'] || obj['TRAN_DATE'] || '';
+        let date = obj['Date'] || '';
         if (date && date.includes('/')) {
-          const [day, month, year] = date.split('/');
-          date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        } else {
+          const parts = date.split('/');
+          if (parts.length === 3) {
+            const [day, month, year] = parts;
+            date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          }
+        }
+        if (!date || date === '--') {
           date = new Date().toISOString().split('T')[0];
         }
         
-        const description = obj['Description'] || obj['Narrative'] || obj['NARRATIVE'] || 'Unknown';
+        const description = obj['Narrative'] || obj['Description'] || obj['NARRATIVE'] || 'Unknown';
         
         // Handle Westpac's separate Debit/Credit columns
-        const debitAmount = parseFloat((obj['Debit Amount'] || '0').replace(/[^0-9.-]/g, '')) || 0;
-        const creditAmount = parseFloat((obj['Credit Amount'] || '0').replace(/[^0-9.-]/g, '')) || 0;
+        const debitStr = obj['Debit Amount'] || '';
+        const creditStr = obj['Credit Amount'] || '';
+        
+        const debitAmount = debitStr ? parseFloat(debitStr.replace(/[^0-9.-]/g, '')) : 0;
+        const creditAmount = creditStr ? parseFloat(creditStr.replace(/[^0-9.-]/g, '')) : 0;
         
         // Debit = negative (money out), Credit = positive (money in)
-        const amount = creditAmount > 0 ? creditAmount : -debitAmount;
+        let amount = 0;
+        if (creditAmount > 0) {
+          amount = creditAmount;
+        } else if (debitAmount > 0) {
+          amount = -debitAmount;
+        }
         
-        const balance = parseFloat((obj['Balance'] || obj['CLOSING_BAL'] || '0').replace(/[^0-9.-]/g, '')) || 0;
+        const balanceStr = obj['Balance'] || obj['CLOSING_BAL'] || '0';
+        const balance = parseFloat(balanceStr.replace(/[^0-9.-]/g, '')) || 0;
 
         // Auto-categorize based on merchant
         let category = 'Other';
         const descLower = description.toLowerCase();
         
         // Income detection
-        if (amount > 0 && (descLower.includes('salary') || descLower.includes('deposit') || descLower.includes('credit') || descLower.includes('jobseeker'))) {
-          category = 'Income';
-        } else {
-          // Expense categorization
+        if (amount > 0) {
+          if (descLower.includes('salary') || 
+              descLower.includes('deposit-salary') || 
+              descLower.includes('jobseeker') || 
+              descLower.includes('interest paid')) {
+            category = 'Income';
+          } else if (descLower.includes('deposit') && !descLower.includes('withdrawal')) {
+            category = 'Income';
+          }
+        }
+        
+        // Expense categorization
+        if (category === 'Other') {
           for (const [merchant, cat] of Object.entries(MERCHANT_RULES)) {
             if (descLower.includes(merchant)) {
               category = cat;
@@ -174,7 +219,7 @@ export default function FinanceTracker() {
         }
 
         return {
-          id: `trans-${Date.now()}-${index}`,
+          id: `trans-${Date.now()}-${index}-${Math.random()}`,
           date,
           description,
           amount,
@@ -183,7 +228,7 @@ export default function FinanceTracker() {
           notes: '',
           recurring: false,
         };
-      });
+      }).filter(t => t.amount !== 0); // Remove transactions with no amount
 
       setTransactions(prev => [...newTransactions, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)));
       setShowUploadModal(false);
