@@ -94,6 +94,7 @@ export default function FinanceTracker() {
   const [jobs, setJobs] = useState([]);
   const [workSchedule, setWorkSchedule] = useState({});
   const [recurringTransactions, setRecurringTransactions] = useState([]);
+  const [imports, setImports] = useState([]);
 
   // Load data from localStorage
   useEffect(() => {
@@ -109,14 +110,15 @@ export default function FinanceTracker() {
       setJobs(data.jobs || []);
       setWorkSchedule(data.workSchedule || {});
       setRecurringTransactions(data.recurringTransactions || []);
+      setImports(data.imports || []);
     }
   }, []);
 
   // Save data to localStorage
   useEffect(() => {
-    const data = { transactions, budgets, debts, savingsGoals, accounts, assets, jobs, workSchedule, recurringTransactions };
+    const data = { transactions, budgets, debts, savingsGoals, accounts, assets, jobs, workSchedule, recurringTransactions, imports };
     localStorage.setItem('financeTrackerData', JSON.stringify(data));
-  }, [transactions, budgets, debts, savingsGoals, accounts, assets, jobs, workSchedule, recurringTransactions]);
+  }, [transactions, budgets, debts, savingsGoals, accounts, assets, jobs, workSchedule, recurringTransactions, imports]);
 
   // Parse CSV from Westpac - proper CSV parsing with quoted field handling
   const handleCSVUpload = (e) => {
@@ -227,9 +229,20 @@ export default function FinanceTracker() {
           category,
           notes: '',
           recurring: false,
+          importId: `import-${Date.now()}`, // Track which import this came from
         };
       }).filter(t => t.amount !== 0); // Remove transactions with no amount
 
+      // Track this import
+      const importRecord = {
+        id: `import-${Date.now()}`,
+        filename: file.name,
+        date: new Date().toISOString(),
+        count: newTransactions.length,
+        transactionIds: newTransactions.map(t => t.id),
+      };
+
+      setImports(prev => [importRecord, ...prev]);
       setTransactions(prev => [...newTransactions, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)));
       setShowUploadModal(false);
     };
@@ -352,7 +365,8 @@ export default function FinanceTracker() {
               { id: 'debts', label: 'Debts', icon: CreditCard },
               { id: 'savings', label: 'Savings Goals', icon: PiggyBank },
               { id: 'networth', label: 'Net Worth', icon: TrendingUp },
-              { id: 'reports', label: 'Reports', icon: Settings },
+              { id: 'reports', label: 'Reports', icon: Download },
+              { id: 'settings', label: 'Settings', icon: Settings },
             ].map(nav => (
               <button
                 key={nav.id}
@@ -470,6 +484,27 @@ export default function FinanceTracker() {
           <ReportsView
             transactions={transactions}
             metrics={metrics}
+            darkMode={darkMode}
+            cardBg={cardBg}
+            textSecondary={textSecondary}
+            borderColor={borderColor}
+          />
+        )}
+        
+        {currentView === 'settings' && (
+          <SettingsView
+            transactions={transactions}
+            setTransactions={setTransactions}
+            imports={imports}
+            setImports={setImports}
+            setBudgets={setBudgets}
+            setDebts={setDebts}
+            setSavingsGoals={setSavingsGoals}
+            setAccounts={setAccounts}
+            setAssets={setAssets}
+            setJobs={setJobs}
+            setWorkSchedule={setWorkSchedule}
+            setRecurringTransactions={setRecurringTransactions}
             darkMode={darkMode}
             cardBg={cardBg}
             textSecondary={textSecondary}
@@ -1846,6 +1881,244 @@ function ReportsView({ transactions, metrics, darkMode, cardBg, textSecondary, b
           </ResponsiveContainer>
         </div>
       )}
+    </div>
+  );
+}
+
+// Settings View Component
+function SettingsView({ 
+  transactions, 
+  setTransactions, 
+  imports, 
+  setImports,
+  setBudgets,
+  setDebts,
+  setSavingsGoals,
+  setAccounts,
+  setAssets,
+  setJobs,
+  setWorkSchedule,
+  setRecurringTransactions,
+  darkMode, 
+  cardBg, 
+  textSecondary, 
+  borderColor 
+}) {
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showExportSuccess, setShowExportSuccess] = useState(false);
+
+  // Clear all data
+  const clearAllData = () => {
+    setTransactions([]);
+    setBudgets({});
+    setDebts([]);
+    setSavingsGoals([]);
+    setAccounts([]);
+    setAssets({ super: 0, investments: 0, property: 0 });
+    setJobs([]);
+    setWorkSchedule({});
+    setRecurringTransactions([]);
+    setImports([]);
+    setShowClearConfirm(false);
+    alert('All data cleared successfully!');
+  };
+
+  // Delete specific import
+  const deleteImport = (importId) => {
+    if (window.confirm('Delete this import? All associated transactions will be removed.')) {
+      // Remove transactions from this import
+      setTransactions(prev => prev.filter(t => t.importId !== importId));
+      // Remove import record
+      setImports(prev => prev.filter(imp => imp.id !== importId));
+    }
+  };
+
+  // Export all data as JSON
+  const exportData = () => {
+    const data = {
+      transactions,
+      imports,
+      exportDate: new Date().toISOString(),
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `finance-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    setShowExportSuccess(true);
+    setTimeout(() => setShowExportSuccess(false), 3000);
+  };
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Settings & Data Management</h1>
+
+      {/* Data Export */}
+      <div className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
+        <div className="flex items-center space-x-3 mb-4">
+          <Download className="text-blue-500" size={24} />
+          <h2 className="text-xl font-bold">Export Data</h2>
+        </div>
+        <p className={`${textSecondary} mb-4`}>
+          Download a backup of all your financial data as a JSON file.
+        </p>
+        <button
+          onClick={exportData}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+        >
+          <Download size={18} />
+          <span>Export Backup</span>
+        </button>
+        {showExportSuccess && (
+          <div className="mt-3 p-3 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg flex items-center space-x-2">
+            <CheckCircle size={20} />
+            <span>Data exported successfully!</span>
+          </div>
+        )}
+      </div>
+
+      {/* Import Management */}
+      <div className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
+        <div className="flex items-center space-x-3 mb-4">
+          <Upload className="text-purple-500" size={24} />
+          <h2 className="text-xl font-bold">Manage Imports</h2>
+        </div>
+        <p className={`${textSecondary} mb-4`}>
+          View and manage your CSV imports. You can delete individual imports and their transactions.
+        </p>
+
+        {imports.length === 0 ? (
+          <div className="text-center py-8">
+            <Upload size={48} className="mx-auto mb-4 text-gray-400" />
+            <p className={textSecondary}>No imports yet. Upload a CSV file to get started!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {imports.map(imp => (
+              <div key={imp.id} className={`p-4 rounded-lg border ${borderColor} flex items-center justify-between`}>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-1">
+                    <span className="font-semibold">{imp.filename}</span>
+                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs">
+                      {imp.count} transactions
+                    </span>
+                  </div>
+                  <p className={`text-sm ${textSecondary}`}>
+                    Imported: {new Date(imp.date).toLocaleString('en-AU')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => deleteImport(imp.id)}
+                  className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded transition-colors"
+                  title="Delete this import"
+                >
+                  <Trash2 size={20} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Transaction Statistics */}
+      <div className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
+        <div className="flex items-center space-x-3 mb-4">
+          <DollarSign className="text-green-500" size={24} />
+          <h2 className="text-xl font-bold">Data Statistics</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className={`p-4 rounded-lg border ${borderColor} text-center`}>
+            <p className={`text-sm ${textSecondary} mb-1`}>Total Transactions</p>
+            <p className="text-2xl font-bold">{transactions.length}</p>
+          </div>
+          <div className={`p-4 rounded-lg border ${borderColor} text-center`}>
+            <p className={`text-sm ${textSecondary} mb-1`}>Total Imports</p>
+            <p className="text-2xl font-bold">{imports.length}</p>
+          </div>
+          <div className={`p-4 rounded-lg border ${borderColor} text-center`}>
+            <p className={`text-sm ${textSecondary} mb-1`}>Income Transactions</p>
+            <p className="text-2xl font-bold text-green-600">
+              {transactions.filter(t => t.amount > 0).length}
+            </p>
+          </div>
+          <div className={`p-4 rounded-lg border ${borderColor} text-center`}>
+            <p className={`text-sm ${textSecondary} mb-1`}>Expense Transactions</p>
+            <p className="text-2xl font-bold text-red-600">
+              {transactions.filter(t => t.amount < 0).length}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Danger Zone */}
+      <div className={`${cardBg} rounded-xl p-6 border-2 border-red-500 shadow-lg`}>
+        <div className="flex items-center space-x-3 mb-4">
+          <AlertCircle className="text-red-500" size={24} />
+          <h2 className="text-xl font-bold text-red-600">Danger Zone</h2>
+        </div>
+        <p className={`${textSecondary} mb-4`}>
+          <strong>Warning:</strong> This will permanently delete ALL your data including transactions, budgets, debts, savings goals, and settings. This action cannot be undone!
+        </p>
+
+        {!showClearConfirm ? (
+          <button
+            onClick={() => setShowClearConfirm(true)}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all"
+          >
+            Clear All Data
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <div className="p-4 bg-red-100 dark:bg-red-900 rounded-lg">
+              <p className="font-bold text-red-900 dark:text-red-100 mb-2">
+                Are you absolutely sure?
+              </p>
+              <p className="text-sm text-red-800 dark:text-red-200">
+                This will delete {transactions.length} transactions, {imports.length} imports, and all other data. Type "DELETE" to confirm.
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={clearAllData}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-bold"
+              >
+                Yes, Delete Everything
+              </button>
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className={`px-4 py-2 rounded-lg border ${borderColor} hover:bg-gray-50 dark:hover:bg-gray-700 transition-all`}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* App Info */}
+      <div className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
+        <h2 className="text-xl font-bold mb-4">About FinanceFlow</h2>
+        <div className="space-y-2 text-sm">
+          <p className={textSecondary}>
+            <strong>Version:</strong> 1.0.0
+          </p>
+          <p className={textSecondary}>
+            <strong>Storage:</strong> All data is stored locally in your browser (localStorage)
+          </p>
+          <p className={textSecondary}>
+            <strong>Privacy:</strong> No data is sent to any server. Your financial information stays on your device.
+          </p>
+          <p className={textSecondary}>
+            <strong>Backup:</strong> Use the "Export Backup" feature regularly to save your data.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
