@@ -48,9 +48,16 @@ const MERCHANT_RULES = {
   'netflix': 'Entertainment',
   'spotify': 'Entertainment',
   'steam': 'Entertainment',
+  'apple.com': 'Entertainment',
+  'amazon': 'Shopping',
   'mcdonald': 'Dining Out',
+  'mcdonalds': 'Dining Out',
   'kfc': 'Dining Out',
   'subway': 'Dining Out',
+  'hungry jack': 'Dining Out',
+  'dominos': 'Dining Out',
+  'guzman': 'Dining Out',
+  'gyg': 'Dining Out',
   'bunnings': 'Shopping',
   'kmart': 'Shopping',
   'target': 'Shopping',
@@ -62,6 +69,15 @@ const MERCHANT_RULES = {
   'gym': 'Health',
   'chemist': 'Health',
   'pharmacy': 'Health',
+  'hotel': 'Dining Out',
+  'pub': 'Dining Out',
+  'bws': 'Dining Out',
+  'liquor': 'Dining Out',
+  'afterpay': 'Shopping',
+  'patreon': 'Entertainment',
+  'sportsbet': 'Entertainment',
+  '7-eleven': 'Transport',
+  'lululemon': 'Shopping',
 };
 
 // Main App Component
@@ -120,25 +136,41 @@ export default function FinanceTracker() {
           obj[header] = values[i];
         });
 
-        // Extract key fields (adjust based on Westpac CSV format)
-        const date = obj['Date'] || obj['Transaction Date'] || obj['TRAN_DATE'] || new Date().toISOString().split('T')[0];
+        // Extract date - handle DD/MM/YYYY format
+        let date = obj['Date'] || obj['Transaction Date'] || obj['TRAN_DATE'] || '';
+        if (date && date.includes('/')) {
+          const [day, month, year] = date.split('/');
+          date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        } else {
+          date = new Date().toISOString().split('T')[0];
+        }
+        
         const description = obj['Description'] || obj['Narrative'] || obj['NARRATIVE'] || 'Unknown';
-        const amount = parseFloat((obj['Amount'] || obj['AMOUNT'] || '0').replace(/[^0-9.-]/g, '')) || 0;
+        
+        // Handle Westpac's separate Debit/Credit columns
+        const debitAmount = parseFloat((obj['Debit Amount'] || '0').replace(/[^0-9.-]/g, '')) || 0;
+        const creditAmount = parseFloat((obj['Credit Amount'] || '0').replace(/[^0-9.-]/g, '')) || 0;
+        
+        // Debit = negative (money out), Credit = positive (money in)
+        const amount = creditAmount > 0 ? creditAmount : -debitAmount;
+        
         const balance = parseFloat((obj['Balance'] || obj['CLOSING_BAL'] || '0').replace(/[^0-9.-]/g, '')) || 0;
 
         // Auto-categorize based on merchant
         let category = 'Other';
         const descLower = description.toLowerCase();
-        for (const [merchant, cat] of Object.entries(MERCHANT_RULES)) {
-          if (descLower.includes(merchant)) {
-            category = cat;
-            break;
-          }
-        }
         
-        // Detect income
-        if (amount > 0 && (descLower.includes('salary') || descLower.includes('pay') || descLower.includes('transfer in'))) {
+        // Income detection
+        if (amount > 0 && (descLower.includes('salary') || descLower.includes('deposit') || descLower.includes('credit') || descLower.includes('jobseeker'))) {
           category = 'Income';
+        } else {
+          // Expense categorization
+          for (const [merchant, cat] of Object.entries(MERCHANT_RULES)) {
+            if (descLower.includes(merchant)) {
+              category = cat;
+              break;
+            }
+          }
         }
 
         return {
