@@ -636,7 +636,7 @@ export default function FinanceTracker() {
             textSecondary={textSecondary}
             borderColor={borderColor}
           />
-        )
+        )}
         
         {currentView === 'breakdown' && (
           <SpendingBreakdownView
@@ -774,6 +774,7 @@ export default function FinanceTracker() {
     </div>
   );
 }
+
 
 // Dashboard View Component
 function DashboardView({ metrics, transactions, budgets, savingsGoals, darkMode, cardBg, textSecondary, borderColor }) {

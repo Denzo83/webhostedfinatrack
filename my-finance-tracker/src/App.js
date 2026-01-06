@@ -636,7 +636,7 @@ export default function FinanceTracker() {
             textSecondary={textSecondary}
             borderColor={borderColor}
           />
-        )
+        )}
         
         {currentView === 'breakdown' && (
           <SpendingBreakdownView
