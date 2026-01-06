@@ -38,46 +38,212 @@ const DEFAULT_CATEGORIES = [
   'Shopping', 'Bills', 'Health', 'Education', 'Income', 'Other'
 ];
 
-// Merchant auto-categorization rules
+// Comprehensive merchant auto-categorization rules
 const MERCHANT_RULES = {
-  'woolworths': 'Groceries',
+  // *** TRANSFERS - MUST BE FIRST TO PREVENT DOUBLE COUNTING ***
+  // These are internal transfers between your accounts that should NOT count as income/expense
+  
+  // Groceries
   'coles': 'Groceries',
+  'woolworths': 'Groceries',
+  'vitology': 'Groceries',
   'aldi': 'Groceries',
   'iga': 'Groceries',
-  'uber': 'Transport',
-  'netflix': 'Entertainment',
-  'spotify': 'Entertainment',
-  'steam': 'Entertainment',
-  'apple.com': 'Entertainment',
-  'amazon': 'Shopping',
+  
+  // Drinking/Dining Out
+  'kent': 'Dining Out',
+  'pub': 'Dining Out',
+  'bar': 'Dining Out',
+  'hotel': 'Dining Out',
+  'king st': 'Dining Out',
+  'uptowns': 'Dining Out',
+  'kahunas': 'Dining Out',
+  'george darby': 'Dining Out',
+  'finnegans': 'Dining Out',
+  'casino': 'Dining Out',
+  'grill': 'Dining Out',
+  'warners at the bay': 'Dining Out',
+  'gunyah': 'Dining Out',
+  'general roberts': 'Dining Out',
+  'wests': 'Dining Out',
   'mcdonald': 'Dining Out',
-  'mcdonalds': 'Dining Out',
-  'kfc': 'Dining Out',
-  'subway': 'Dining Out',
+  'hamilton station': 'Dining Out',
+  'sydney junction': 'Dining Out',
+  'bws': 'Dining Out',
+  'liquorland': 'Dining Out',
+  'celebrations': 'Dining Out',
   'hungry jack': 'Dining Out',
+  'kfc': 'Dining Out',
+  'burger': 'Dining Out',
+  'grilld': 'Dining Out',
   'dominos': 'Dining Out',
+  'tighes hill': 'Dining Out',
+  'subway': 'Dining Out',
   'guzman': 'Dining Out',
   'gyg': 'Dining Out',
-  'bunnings': 'Shopping',
+  'sushi': 'Dining Out',
+  'harrys': 'Dining Out',
+  'chiefly': 'Dining Out',
+  'pippi': 'Dining Out',
+  'cafe': 'Dining Out',
+  'bistro': 'Dining Out',
+  'alhgroup': 'Dining Out',
+  'venues': 'Dining Out',
+  'indian': 'Dining Out',
+  'tandori': 'Dining Out',
+  'raj': 'Dining Out',
+  'signal box': 'Dining Out',
+  'wharf': 'Dining Out',
+  'bowling': 'Dining Out',
+  'jcsr': 'Dining Out',
+  'p and g food': 'Dining Out',
+  'prince': 'Dining Out',
+  'mary ellen': 'Dining Out',
+  'antojitos': 'Dining Out',
+  'haps': 'Dining Out',
+  'king street newcastle': 'Dining Out',
+  'lass': 'Dining Out',
+  'merewether surf': 'Dining Out',
+  'jams': 'Dining Out',
+  'trailblazers': 'Dining Out',
+  'charlies rooftop': 'Dining Out',
+  'rooftop': 'Dining Out',
+  'alh venues': 'Dining Out',
+  'leda gallery': 'Dining Out',
+  'charcoal': 'Dining Out',
+  'foodpod': 'Dining Out',
+  'yummy': 'Dining Out',
+  'trustee for the g': 'Dining Out',
+  
+  // Food Delivery
+  'uber eats': 'Food Delivery',
+  'uber *eats': 'Food Delivery',
+  'ubereats': 'Food Delivery',
+  'doordash': 'Food Delivery',
+  
+  // Transport
+  'transport': 'Transport',
+  'opal': 'Transport',
+  'uber trip': 'Transport',
+  'uber *trip': 'Transport',
+  'didi': 'Transport',
+  '13cabs': 'Transport',
+  'cabcharge': 'Transport',
+  'transportfornsw': 'Transport',
+  
+  // Gym & Health
+  'balance collective': 'Gym',
+  'fitness': 'Gym',
+  'revo': 'Gym',
+  'urth': 'Gym',
+  'chemist': 'Health',
+  'pharmacy': 'Health',
+  'appletree': 'Health',
+  'doctor': 'Health',
+  'hospital': 'Health',
+  'nurse': 'Health',
+  'physio': 'Health',
+  'physiotherapy': 'Health',
+  'regent': 'Health',
+  'glasses': 'Health',
+  'specsavers': 'Health',
+  'aust hlth': 'Health',
+  'medicare': 'Health',
+  
+  // Shopping
+  'ucl co': 'Shopping',
   'kmart': 'Shopping',
+  'afterpay': 'Shopping',
+  'amazon': 'Shopping',
+  'big w': 'Shopping',
+  'temu': 'Shopping',
+  'myer': 'Shopping',
+  'rebelsport': 'Shopping',
+  'bunnings': 'Shopping',
   'target': 'Shopping',
   'jb': 'Shopping',
+  
+  // Subscriptions
+  'nba': 'Subscriptions',
+  'prime': 'Subscriptions',
+  'amazon prime': 'Subscriptions',
+  'amznprimeau': 'Subscriptions',
+  'youtube': 'Subscriptions',
+  'netflix': 'Subscriptions',
+  'binge': 'Subscriptions',
+  'kayo': 'Subscriptions',
+  'tennis': 'Subscriptions',
+  'audible': 'Subscriptions',
+  'real debrid': 'Subscriptions',
+  'spotify': 'Subscriptions',
+  'patreon': 'Subscriptions',
+  
+  // Betting
+  'dablle': 'Betting',
+  'sportsbet': 'Betting',
+  'slaps': 'Betting',
+  'hits': 'Betting',
+  'slap': 'Betting',
+  'bump': 'Betting',
+  'atm': 'Betting',
+  'finn': 'Betting',
+  
+  // Bills
+  'prepaid': 'Bills',
+  'aami': 'Bills',
+  'ahm': 'Bills',
+  'google': 'Bills',
+  'apple.com': 'Bills',
+  'rent': 'Bills',
+  'felix': 'Bills',
+  'circles': 'Bills',
+  'prettygood': 'Bills',
+  'pretty good': 'Bills',
+  'qbe': 'Bills',
   'agl': 'Bills',
   'origin': 'Bills',
   'telstra': 'Bills',
   'optus': 'Bills',
-  'gym': 'Health',
-  'chemist': 'Health',
-  'pharmacy': 'Health',
-  'hotel': 'Dining Out',
-  'pub': 'Dining Out',
-  'bws': 'Dining Out',
-  'liquor': 'Dining Out',
-  'afterpay': 'Shopping',
-  'patreon': 'Entertainment',
-  'sportsbet': 'Entertainment',
-  '7-eleven': 'Transport',
-  'lululemon': 'Shopping',
+  
+  // Car
+  'thompsons': 'Car',
+  'automotive': 'Car',
+  'nova': 'Car',
+  '711': 'Car',
+  '7-eleven': 'Car',
+  'petrol': 'Car',
+  
+  // Sports
+  'golf': 'Sports',
+  'shortland waters': 'Sports',
+  'charelstown golf': 'Sports',
+  'basketball': 'Sports',
+  'newcastle basketball': 'Sports',
+  'basketballconnect': 'Sports',
+  'driving range': 'Sports',
+  'golf club': 'Sports',
+  
+  // Education
+  'uon': 'Education',
+  
+  // Repayments (specific people/items)
+  'repayment': 'Repayments',
+  'vw': 'Repayments',
+  'owed': 'Repayments',
+  'pay back': 'Repayments',
+  'borrowed': 'Repayments',
+  'borrow': 'Repayments',
+  'lend': 'Repayments',
+  'sax': 'Repayments',
+  'iphone': 'Repayments',
+  
+  // Income/Salary
+  'cordel': 'Income',
+  'oneforma': 'Income',
+  'amazon flex': 'Income',
+  'jobseeker': 'Income',
+  'salary': 'Income',
+  'deposit-salary': 'Income',
 };
 
 // Main App Component
@@ -198,8 +364,21 @@ export default function FinanceTracker() {
         let category = 'Other';
         const descLower = description.toLowerCase();
         
+        // First, check if it's an internal transfer (to exclude from totals)
+        const isTransfer = 
+          descLower.includes('tfr westpac') ||
+          descLower.includes('tfr card') ||
+          descLower.includes('tfr living expe') ||
+          descLower.includes('transfer') ||
+          descLower.includes('trf') ||
+          (descLower.includes('withdrawal') && descLower.includes('mobile') && (descLower.includes('tfr') || descLower.includes('trf'))) ||
+          (descLower.includes('deposit') && descLower.includes('online') && (descLower.includes('tfr') || descLower.includes('trf')));
+        
+        if (isTransfer) {
+          category = 'Transfer';
+        }
         // Income detection
-        if (amount > 0) {
+        else if (amount > 0) {
           if (descLower.includes('salary') || 
               descLower.includes('deposit-salary') || 
               descLower.includes('jobseeker') || 
@@ -209,9 +388,8 @@ export default function FinanceTracker() {
             category = 'Income';
           }
         }
-        
         // Expense categorization
-        if (category === 'Other') {
+        else if (category === 'Other') {
           for (const [merchant, cat] of Object.entries(MERCHANT_RULES)) {
             if (descLower.includes(merchant)) {
               category = cat;
@@ -276,12 +454,15 @@ export default function FinanceTracker() {
       return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
     });
 
-    const income = monthTransactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
-    const expenses = monthTransactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    // Exclude transfers from income/expense calculations
+    const nonTransferTransactions = monthTransactions.filter(t => t.category !== 'Transfer');
+
+    const income = nonTransferTransactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+    const expenses = nonTransferTransactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
     
-    // Category breakdown
+    // Category breakdown (excluding transfers)
     const categorySpending = {};
-    monthTransactions.filter(t => t.amount < 0).forEach(t => {
+    nonTransferTransactions.filter(t => t.amount < 0).forEach(t => {
       categorySpending[t.category] = (categorySpending[t.category] || 0) + Math.abs(t.amount);
     });
 
@@ -361,6 +542,7 @@ export default function FinanceTracker() {
               { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
               { id: 'transactions', label: 'Transactions', icon: DollarSign },
               { id: 'budget', label: 'Budget', icon: Target },
+              { id: 'breakdown', label: 'Spending Breakdown', icon: PieChart },
               { id: 'forecast', label: 'Cash Flow Forecast', icon: Calendar },
               { id: 'debts', label: 'Debts', icon: CreditCard },
               { id: 'savings', label: 'Savings Goals', icon: PiggyBank },
@@ -417,6 +599,16 @@ export default function FinanceTracker() {
             budgets={budgets}
             setBudgets={setBudgets}
             metrics={metrics}
+            darkMode={darkMode}
+            cardBg={cardBg}
+            textSecondary={textSecondary}
+            borderColor={borderColor}
+          />
+        )}
+        
+        {currentView === 'breakdown' && (
+          <SpendingBreakdownView
+            transactions={transactions}
             darkMode={darkMode}
             cardBg={cardBg}
             textSecondary={textSecondary}
@@ -2119,6 +2311,356 @@ function SettingsView({
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Spending Breakdown View Component
+function SpendingBreakdownView({ transactions, darkMode, cardBg, textSecondary, borderColor }) {
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [timeRange, setTimeRange] = useState('1month'); // 1week, 2weeks, 1month, 3months, 6months, 1year, all
+
+  // Get date range based on selection
+  const getDateRange = () => {
+    const now = new Date();
+    const ranges = {
+      '1week': new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+      '2weeks': new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000),
+      '1month': new Date(now.getFullYear(), now.getMonth(), 1),
+      '3months': new Date(now.getFullYear(), now.getMonth() - 2, 1),
+      '6months': new Date(now.getFullYear(), now.getMonth() - 5, 1),
+      '1year': new Date(now.getFullYear() - 1, now.getMonth(), 1),
+      'all': new Date(2000, 0, 1),
+    };
+    return ranges[timeRange];
+  };
+
+  // Filter transactions excluding transfers
+  const filteredTransactions = transactions.filter(t => {
+    const date = new Date(t.date);
+    return date >= getDateRange() && t.category !== 'Transfer' && t.category !== 'Income';
+  });
+
+  // Calculate category totals
+  const categoryTotals = {};
+  const categoryMonthly = {};
+  
+  filteredTransactions.forEach(t => {
+    if (t.amount < 0) {
+      const cat = t.category;
+      const date = new Date(t.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      // Total spending per category
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + Math.abs(t.amount);
+      
+      // Monthly spending per category
+      if (!categoryMonthly[cat]) categoryMonthly[cat] = {};
+      categoryMonthly[cat][monthKey] = (categoryMonthly[cat][monthKey] || 0) + Math.abs(t.amount);
+    }
+  });
+
+  // Sort categories by total spending
+  const sortedCategories = Object.entries(categoryTotals)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, total]) => ({
+      name: cat,
+      total,
+      monthly: categoryMonthly[cat] || {},
+      transactions: filteredTransactions.filter(t => t.category === cat && t.amount < 0),
+    }));
+
+  // Calculate total expenses
+  const totalExpenses = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0);
+
+  // Get all unique months in range
+  const allMonths = [...new Set(
+    filteredTransactions.map(t => {
+      const date = new Date(t.date);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    })
+  )].sort().reverse();
+
+  // For Repayments category, extract recipient details
+  const getRepaymentDetails = (transaction) => {
+    const desc = transaction.description.toLowerCase();
+    
+    // Extract name patterns
+    if (desc.includes('christopher') || desc.includes('christophe')) return 'Dad (Christopher)';
+    if (desc.includes('nicole')) return 'Mum (Nicole)';
+    if (desc.includes('den vw') || desc.includes('vw')) return 'Car (VW)';
+    if (desc.includes('sax')) return 'Sax';
+    if (desc.includes('iphone')) return 'iPhone';
+    if (desc.includes('levi')) return 'Levi';
+    
+    return 'Other';
+  };
+
+  // Group repayments by recipient
+  const repaymentsByRecipient = {};
+  if (selectedCategory === 'Repayments') {
+    sortedCategories.find(c => c.name === 'Repayments')?.transactions.forEach(t => {
+      const recipient = getRepaymentDetails(t);
+      if (!repaymentsByRecipient[recipient]) {
+        repaymentsByRecipient[recipient] = { total: 0, count: 0, transactions: [] };
+      }
+      repaymentsByRecipient[recipient].total += Math.abs(t.amount);
+      repaymentsByRecipient[recipient].count += 1;
+      repaymentsByRecipient[recipient].transactions.push(t);
+    });
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Spending Breakdown</h1>
+        
+        {/* Time Range Selector */}
+        <select
+          value={timeRange}
+          onChange={(e) => setTimeRange(e.target.value)}
+          className={`px-4 py-2 rounded-lg border ${borderColor} ${darkMode ? 'bg-gray-700' : 'bg-white'}`}
+        >
+          <option value="1week">Last Week</option>
+          <option value="2weeks">Last 2 Weeks</option>
+          <option value="1month">Last Month</option>
+          <option value="3months">Last 3 Months</option>
+          <option value="6months">Last 6 Months</option>
+          <option value="1year">Last Year</option>
+          <option value="all">All Time</option>
+        </select>
+      </div>
+
+      {/* Total Expenses Card */}
+      <div className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
+        <h2 className="text-xl font-bold mb-4">Total Expenses</h2>
+        <div className="text-4xl font-bold text-red-600">
+          ${totalExpenses.toFixed(2)}
+        </div>
+        <p className={`text-sm ${textSecondary} mt-2`}>
+          Excluding transfers and income • {filteredTransactions.filter(t => t.amount < 0).length} transactions
+        </p>
+      </div>
+
+      {/* Pie Chart */}
+      <div className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
+        <h2 className="text-xl font-bold mb-4">Spending by Category</h2>
+        {sortedCategories.length > 0 ? (
+          <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+            <div className="w-full md:w-1/2">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={sortedCategories.map((cat, idx) => ({
+                      name: cat.name,
+                      value: cat.total,
+                      fill: `hsl(${(idx * 360) / sortedCategories.length}, 70%, 50%)`
+                    }))}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={(entry) => `$${entry.value.toFixed(0)}`}
+                  >
+                    {sortedCategories.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={`hsl(${(index * 360) / sortedCategories.length}, 70%, 50%)`} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                    }}
+                    formatter={(value) => `$${value.toFixed(2)}`}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="w-full md:w-1/2 space-y-2">
+              {sortedCategories.slice(0, 8).map((cat, idx) => (
+                <div key={cat.name} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: `hsl(${(idx * 360) / sortedCategories.length}, 70%, 50%)` }}
+                    />
+                    <span className="text-sm">{cat.name}</span>
+                  </div>
+                  <span className="text-sm font-semibold">${cat.total.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className={`text-center ${textSecondary} py-8`}>No expenses in this time range</p>
+        )}
+      </div>
+
+      {/* Category Summary */}
+      <div className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
+        <h2 className="text-xl font-bold mb-4">Category Summary</h2>
+        
+        <div className="space-y-3">
+          {sortedCategories.length === 0 ? (
+            <p className={textSecondary}>No expenses in this time range</p>
+          ) : (
+            sortedCategories.map((category) => {
+              const percentage = (category.total / totalExpenses) * 100;
+              
+              return (
+                <div
+                  key={category.name}
+                  className={`p-4 rounded-lg border ${borderColor} cursor-pointer hover:shadow-md transition-all ${
+                    selectedCategory === category.name ? 'ring-2 ring-blue-500' : ''
+                  }`}
+                  onClick={() => setSelectedCategory(selectedCategory === category.name ? null : category.name)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full`} style={{
+                        backgroundColor: `hsl(${(sortedCategories.indexOf(category) * 360) / sortedCategories.length}, 70%, 50%)`
+                      }} />
+                      <span className="font-semibold">{category.name}</span>
+                      <span className={`text-sm ${textSecondary}`}>
+                        ({category.transactions.length} transactions)
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-red-600">
+                        ${category.total.toFixed(2)}
+                      </div>
+                      <div className={`text-sm ${textSecondary}`}>
+                        {percentage.toFixed(1)}% of total
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Progress bar */}
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div
+                      className="h-2 rounded-full transition-all"
+                      style={{
+                        width: `${percentage}%`,
+                        backgroundColor: `hsl(${(sortedCategories.indexOf(category) * 360) / sortedCategories.length}, 70%, 50%)`
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Detailed Category View */}
+      {selectedCategory && (
+        <div className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">{selectedCategory} - Monthly Breakdown</h2>
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Repayments Special View */}
+          {selectedCategory === 'Repayments' && Object.keys(repaymentsByRecipient).length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-bold mb-3">Repayments by Person/Loan</h3>
+              <div className="space-y-2">
+                {Object.entries(repaymentsByRecipient).map(([recipient, data]) => (
+                  <div key={recipient} className={`p-3 rounded-lg border ${borderColor}`}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">{recipient}</span>
+                      <div className="text-right">
+                        <div className="font-bold text-red-600">${data.total.toFixed(2)}</div>
+                        <div className={`text-sm ${textSecondary}`}>{data.count} payments</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Monthly breakdown table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className={`border-b ${borderColor}`}>
+                  <th className="text-left py-2 px-4">Month</th>
+                  <th className="text-right py-2 px-4">Amount</th>
+                  <th className="text-right py-2 px-4">Transactions</th>
+                  <th className="text-right py-2 px-4">Avg per Transaction</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allMonths.map(month => {
+                  const categoryData = sortedCategories.find(c => c.name === selectedCategory);
+                  const monthTotal = categoryData?.monthly[month] || 0;
+                  const monthTransactions = categoryData?.transactions.filter(t => {
+                    const date = new Date(t.date);
+                    const tMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    return tMonth === month;
+                  }) || [];
+                  
+                  if (monthTotal === 0) return null;
+                  
+                  const avgPerTransaction = monthTransactions.length > 0 ? monthTotal / monthTransactions.length : 0;
+                  
+                  return (
+                    <tr key={month} className={`border-b ${borderColor} hover:bg-gray-50 dark:hover:bg-gray-800`}>
+                      <td className="py-2 px-4">
+                        {new Date(month + '-01').toLocaleDateString('en-AU', { year: 'numeric', month: 'long' })}
+                      </td>
+                      <td className="text-right py-2 px-4 font-semibold text-red-600">
+                        ${monthTotal.toFixed(2)}
+                      </td>
+                      <td className="text-right py-2 px-4">
+                        {monthTransactions.length}
+                      </td>
+                      <td className="text-right py-2 px-4 text-gray-600">
+                        ${avgPerTransaction.toFixed(2)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Spending by Category Chart */}
+      {sortedCategories.length > 0 && (
+        <div className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
+          <h2 className="text-xl font-bold mb-4">Spending Distribution</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={sortedCategories.map((cat, idx) => ({
+                    name: cat.name,
+                    value: cat.total,
+                    fill: `hsl(${(idx * 360) / sortedCategories.length}, 70%, 50%)`
+                  }))}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  dataKey="value"
+                />
+                <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
