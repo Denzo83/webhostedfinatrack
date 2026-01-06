@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { Upload, TrendingUp, TrendingDown, DollarSign, Target, CreditCard, PiggyBank, Calendar, Settings, Moon, Sun, Download, Plus, Trash2, Edit2, Check, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, TrendingUp, TrendingDown, DollarSign, Target, CreditCard, PiggyBank, Calendar, Settings, Moon, Sun, Download, Plus, Trash2, Edit2, Check, X, AlertCircle, CheckCircle, Tag, PieChart } from 'lucide-react';
 
 // Modern color palette - sophisticated and vibrant
 const COLORS = {
@@ -32,11 +32,6 @@ const CATEGORY_COLORS = {
   'Income': COLORS.successLight,
   'Other': '#64748b',
 };
-
-const DEFAULT_CATEGORIES = [
-  'Groceries', 'Dining Out', 'Transport', 'Entertainment', 
-  'Shopping', 'Bills', 'Health', 'Education', 'Income', 'Other'
-];
 
 // Comprehensive merchant auto-categorization rules
 const MERCHANT_RULES = {
@@ -114,6 +109,10 @@ const MERCHANT_RULES = {
   'foodpod': 'Dining Out',
   'yummy': 'Dining Out',
   'trustee for the g': 'Dining Out',
+  'grain store': 'Dining Out',
+  'cooks hill brown': 'Dining Out',
+  'cooks hill': 'Dining Out',
+  'maddyg': 'Dining Out',
   
   // Food Delivery
   'uber eats': 'Food Delivery',
@@ -133,6 +132,8 @@ const MERCHANT_RULES = {
   
   // Gym & Health
   'balance collective': 'Gym',
+  'balance collect': 'Gym',
+  'ipy*balance': 'Gym',
   'fitness': 'Gym',
   'revo': 'Gym',
   'urth': 'Gym',
@@ -180,6 +181,9 @@ const MERCHANT_RULES = {
   
   // Betting
   'dablle': 'Betting',
+  'dabble': 'Betting',
+  'tatts': 'Betting',
+  'tatts online': 'Betting',
   'sportsbet': 'Betting',
   'slaps': 'Betting',
   'hits': 'Betting',
@@ -246,6 +250,27 @@ const MERCHANT_RULES = {
   'deposit-salary': 'Income',
 };
 
+// All available categories (for dropdowns)
+const ALL_CATEGORIES = [
+  'Income',
+  'Transfer',
+  'Grocery',
+  'Dining Out',
+  'Food Delivery',
+  'Shopping',
+  'Transport',
+  'Bills',
+  'Subscriptions',
+  'Gym',
+  'Health',
+  'Sports',
+  'Car',
+  'Betting',
+  'Repayments',
+  'Education',
+  'Other',
+];
+
 // Main App Component
 export default function FinanceTracker() {
   const [darkMode, setDarkMode] = useState(false);
@@ -261,6 +286,10 @@ export default function FinanceTracker() {
   const [workSchedule, setWorkSchedule] = useState({});
   const [recurringTransactions, setRecurringTransactions] = useState([]);
   const [imports, setImports] = useState([]);
+  const [customCategories, setCustomCategories] = useState([]);
+
+  // Combined category list
+  const allCategories = [...ALL_CATEGORIES, ...customCategories].sort();
 
   // Load data from localStorage
   useEffect(() => {
@@ -277,14 +306,15 @@ export default function FinanceTracker() {
       setWorkSchedule(data.workSchedule || {});
       setRecurringTransactions(data.recurringTransactions || []);
       setImports(data.imports || []);
+      setCustomCategories(data.customCategories || []);
     }
   }, []);
 
   // Save data to localStorage
   useEffect(() => {
-    const data = { transactions, budgets, debts, savingsGoals, accounts, assets, jobs, workSchedule, recurringTransactions, imports };
+    const data = { transactions, budgets, debts, savingsGoals, accounts, assets, jobs, workSchedule, recurringTransactions, imports, customCategories };
     localStorage.setItem('financeTrackerData', JSON.stringify(data));
-  }, [transactions, budgets, debts, savingsGoals, accounts, assets, jobs, workSchedule, recurringTransactions, imports]);
+  }, [transactions, budgets, debts, savingsGoals, accounts, assets, jobs, workSchedule, recurringTransactions, imports, customCategories]);
 
   // Parse CSV from Westpac - proper CSV parsing with quoted field handling
   const handleCSVUpload = (e) => {
@@ -586,6 +616,7 @@ export default function FinanceTracker() {
           <TransactionsView
             transactions={transactions}
             setTransactions={setTransactions}
+            allCategories={allCategories}
             darkMode={darkMode}
             cardBg={cardBg}
             textSecondary={textSecondary}
@@ -599,12 +630,13 @@ export default function FinanceTracker() {
             budgets={budgets}
             setBudgets={setBudgets}
             metrics={metrics}
+            allCategories={allCategories}
             darkMode={darkMode}
             cardBg={cardBg}
             textSecondary={textSecondary}
             borderColor={borderColor}
           />
-        )}
+        )
         
         {currentView === 'breakdown' && (
           <SpendingBreakdownView
@@ -689,6 +721,9 @@ export default function FinanceTracker() {
             setTransactions={setTransactions}
             imports={imports}
             setImports={setImports}
+            customCategories={customCategories}
+            setCustomCategories={setCustomCategories}
+            allCategories={allCategories}
             setBudgets={setBudgets}
             setDebts={setDebts}
             setSavingsGoals={setSavingsGoals}
@@ -967,7 +1002,7 @@ function DashboardView({ metrics, transactions, budgets, savingsGoals, darkMode,
 }
 
 // Transactions View Component
-function TransactionsView({ transactions, setTransactions, darkMode, cardBg, textSecondary, borderColor }) {
+function TransactionsView({ transactions, setTransactions, allCategories, darkMode, cardBg, textSecondary, borderColor }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [editingId, setEditingId] = useState(null);
@@ -1018,7 +1053,7 @@ function TransactionsView({ transactions, setTransactions, darkMode, cardBg, tex
               className={`w-full px-4 py-2 rounded-lg border ${borderColor} ${darkMode ? 'bg-gray-700' : 'bg-white'} focus:ring-2 focus:ring-blue-500 outline-none`}
             >
               <option>All</option>
-              {DEFAULT_CATEGORIES.map(cat => (
+              {allCategories.map(cat => (
                 <option key={cat}>{cat}</option>
               ))}
             </select>
@@ -1066,7 +1101,7 @@ function TransactionsView({ transactions, setTransactions, darkMode, cardBg, tex
                           onChange={(e) => setEditData({...editData, category: e.target.value})}
                           className={`px-2 py-1 rounded border ${borderColor} ${darkMode ? 'bg-gray-600' : 'bg-white'}`}
                         >
-                          {DEFAULT_CATEGORIES.map(cat => (
+                          {allCategories.map(cat => (
                             <option key={cat}>{cat}</option>
                           ))}
                         </select>
@@ -1131,7 +1166,7 @@ function TransactionsView({ transactions, setTransactions, darkMode, cardBg, tex
 }
 
 // Budget View Component
-function BudgetView({ transactions, budgets, setBudgets, metrics, darkMode, cardBg, textSecondary, borderColor }) {
+function BudgetView({ transactions, budgets, setBudgets, metrics, allCategories, darkMode, cardBg, textSecondary, borderColor }) {
   const [editingCategory, setEditingCategory] = useState(null);
   const [budgetAmount, setBudgetAmount] = useState('');
 
@@ -1141,7 +1176,7 @@ function BudgetView({ transactions, budgets, setBudgets, metrics, darkMode, card
     setBudgetAmount('');
   };
 
-  const categories = DEFAULT_CATEGORIES.filter(c => c !== 'Income');
+  const categories = allCategories.filter(c => c !== 'Income' && c !== 'Transfer');
 
   return (
     <div className="space-y-6">
@@ -2083,6 +2118,9 @@ function SettingsView({
   setTransactions, 
   imports, 
   setImports,
+  customCategories,
+  setCustomCategories,
+  allCategories,
   setBudgets,
   setDebts,
   setSavingsGoals,
@@ -2098,6 +2136,7 @@ function SettingsView({
 }) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showExportSuccess, setShowExportSuccess] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   // Clear all data
   const clearAllData = () => {
@@ -2111,8 +2150,35 @@ function SettingsView({
     setWorkSchedule({});
     setRecurringTransactions([]);
     setImports([]);
+    setCustomCategories([]);
     setShowClearConfirm(false);
     alert('All data cleared successfully!');
+  };
+
+  // Add new category
+  const addCategory = () => {
+    const trimmed = newCategoryName.trim();
+    if (!trimmed) {
+      alert('Please enter a category name');
+      return;
+    }
+    if (allCategories.includes(trimmed)) {
+      alert('Category already exists!');
+      return;
+    }
+    setCustomCategories(prev => [...prev, trimmed].sort());
+    setNewCategoryName('');
+  };
+
+  // Delete custom category
+  const deleteCategory = (categoryName) => {
+    if (window.confirm(`Delete category "${categoryName}"? Transactions with this category will be changed to "Other".`)) {
+      setCustomCategories(prev => prev.filter(c => c !== categoryName));
+      // Update transactions with this category to "Other"
+      setTransactions(prev => prev.map(t => 
+        t.category === categoryName ? { ...t, category: 'Other' } : t
+      ));
+    }
   };
 
   // Delete specific import
@@ -2171,6 +2237,87 @@ function SettingsView({
           <div className="mt-3 p-3 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg flex items-center space-x-2">
             <CheckCircle size={20} />
             <span>Data exported successfully!</span>
+          </div>
+        )}
+      </div>
+
+      {/* Category Management */}
+      <div className={`${cardBg} rounded-xl p-6 border ${borderColor} shadow-lg`}>
+        <div className="flex items-center space-x-3 mb-4">
+          <Tag className="text-indigo-500" size={24} />
+          <h2 className="text-xl font-bold">Manage Categories</h2>
+        </div>
+        <p className={`${textSecondary} mb-4`}>
+          Add custom categories for your transactions. These will appear in all category dropdowns.
+        </p>
+
+        {/* Add New Category */}
+        <div className="flex space-x-3 mb-6">
+          <input
+            type="text"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && addCategory()}
+            placeholder="Enter new category name..."
+            className={`flex-1 px-4 py-2 rounded-lg border ${borderColor} ${darkMode ? 'bg-gray-700' : 'bg-white'} focus:ring-2 focus:ring-blue-500 outline-none`}
+          />
+          <button
+            onClick={addCategory}
+            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold"
+          >
+            Add Category
+          </button>
+        </div>
+
+        {/* Built-in Categories */}
+        <div className="mb-6">
+          <h3 className="font-semibold mb-3 flex items-center space-x-2">
+            <span>Built-in Categories</span>
+            <span className={`text-sm ${textSecondary}`}>({ALL_CATEGORIES.length})</span>
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {ALL_CATEGORIES.map(cat => (
+              <div
+                key={cat}
+                className={`px-3 py-1 rounded-full border ${borderColor} text-sm`}
+              >
+                {cat}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom Categories */}
+        {customCategories.length > 0 && (
+          <div>
+            <h3 className="font-semibold mb-3 flex items-center space-x-2">
+              <span>Your Custom Categories</span>
+              <span className={`text-sm ${textSecondary}`}>({customCategories.length})</span>
+            </h3>
+            <div className="space-y-2">
+              {customCategories.map(cat => (
+                <div
+                  key={cat}
+                  className={`flex items-center justify-between p-3 rounded-lg border ${borderColor}`}
+                >
+                  <span className="font-medium">{cat}</span>
+                  <button
+                    onClick={() => deleteCategory(cat)}
+                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded transition-colors"
+                    title="Delete category"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {customCategories.length === 0 && (
+          <div className="text-center py-6">
+            <Tag size={48} className="mx-auto mb-4 text-gray-400" />
+            <p className={textSecondary}>No custom categories yet. Add one above!</p>
           </div>
         )}
       </div>
